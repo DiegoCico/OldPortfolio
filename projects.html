@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>More Projects - Diego Cicotoste</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header>
+  <h2 class="typewriter">More Projects</h2>
+</header>
+
+<div class="header-container">
+  <div class="view-more-container" style="margin-top: 4.5%">
+    <a href="index.html" class="view-more-link">Back to Home</a>
+  </div>
+  <div class="projectsTitle">GitHub Repositories</div>
+</div>
+
+<!-- Project Count -->
+<div class="project-count" id="projectCount">Total Projects: Loading...</div>
+
+<div class="projects-list rowBox" id="projectsList"></div>
+
+<!-- Footer -->
+<footer>
+  <p style="font-size: 10px">© 2024 - Diego Cicotoste</p>
+  <div class="text-container">
+    <a href="https://github.com/DiegoCico/DiegoCico.github.io" style="font-size: 10px; color: white; text-decoration: none" target="_blank">Open Source on GitHub</a>
+    <div class="hover-line-text"></div>
+  </div>
+</footer>
+
+<script>
+  let currentPage = 1;
+  const perPage = 10;
+  let repos = [];
+  let totalRepos = 0;
+  let fetching = false;
+
+  // Fetch GitHub Repositories with Pagination
+  async function fetchGithubRepos(page = 1) {
+    const response = await fetch(`https://api.github.com/users/DiegoCico/repos?per_page=100&page=${page}`);
+    const data = await response.json();
+
+    if (data.length > 0) {
+      repos = repos.concat(data); // Combine current repos with new ones
+      totalRepos = repos.length;
+
+      // Sort repositories by creation date (most recent first)
+      repos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      // Display the total project count
+      document.getElementById('projectCount').innerText = `Total Projects: ${totalRepos}`;
+
+      // Load first batch of projects if this is the first fetch
+      if (page === 1) {
+        loadProjects();
+      }
+
+      // Fetch the next page if the current page is full (100 repos per page)
+      if (data.length === 100) {
+        fetchGithubRepos(page + 1);
+      }
+    }
+  }
+
+  // Load Projects in Batches
+  function loadProjects() {
+    if (fetching) return;
+    fetching = true;
+
+    const start = (currentPage - 1) * perPage;
+    const end = currentPage * perPage;
+    const currentRepos = repos.slice(start, end);
+
+    const projectList = document.getElementById('projectsList');
+
+    currentRepos.forEach(repo => {
+      const projectItem = document.createElement('div');
+      projectItem.classList.add('box', 'animate-up');
+
+      // Check if the repository has an associated website (homepage field)
+      const websiteLink = repo.homepage ? `
+        <div class="image-container" style="margin-left: 10px;">
+          <a href="${repo.homepage}" target="_blank">
+            <img src="../img/web.png" height="40" width="40"/>
+          </a>
+          <div class="hover-line"></div>
+        </div>
+      ` : '';
+
+      projectItem.innerHTML = `
+        <h3 class="boxTitle">${repo.name}</h3>
+        <p class="boxSubTitle">${repo.description ? repo.description : 'No description available.'}</p>
+        <div class="center-container">
+          <div class="image-container">
+            <a href="${repo.html_url}" target="_blank">
+              <img src="../img/github.png" height="40" width="40"/>
+            </a>
+            <div class="hover-line"></div>
+          </div>
+          ${websiteLink} <!-- Conditionally display the website link -->
+        </div>
+      `;
+      projectList.appendChild(projectItem);
+    });
+
+    currentPage++;
+    fetching = false;
+  }
+
+  // Infinite Scroll Logic
+  window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+      if ((currentPage - 1) * perPage < repos.length) {
+        loadProjects();
+      }
+    }
+  });
+
+  fetchGithubRepos();
+</script>
+
+</body>
+</html>
